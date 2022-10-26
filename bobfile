@@ -1,0 +1,13 @@
+include https://raw.githubusercontent.com/codemonstur/bobfiles/master/foss-lib-github-maven
+
+name: smtpclient
+packaging: jar
+enablePreview: false
+release: 19
+version: 1
+dependencies:
+  - repository: com.sun.mail:javax.mail:1.6.1
+
+build
+    echo [${PROJECT_NAME}] Building
+    run-task -i clean build
