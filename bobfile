@@ -2,7 +2,7 @@ include https://raw.githubusercontent.com/codemonstur/bobfiles/master/foss-lib-g
 
 packaging: jar
 enablePreview: false
-release: 19
+release: 11
 version: 1.0.0
 dependencies:
   - repository: com.sun.mail:javax.mail:1.6.1
