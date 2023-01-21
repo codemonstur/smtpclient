@@ -73,12 +73,14 @@ public class SmtpCall {
         return this;
     }
     public SmtpCall addBodyText(final String message, final Charset charset) throws MessagingException {
+        if (isNullOrEmpty(message)) return this;
         final MimeBodyPart textBodyPart = new MimeBodyPart();
         textBodyPart.setText(message, charset.toString());
         content.addBodyPart(textBodyPart);
         return this;
     }
     public SmtpCall addBodyHtml(final String message, final Charset charset) throws MessagingException {
+        if (isNullOrEmpty(message)) return this;
         final MimeBodyPart htmlBodyPart = new MimeBodyPart();
         htmlBodyPart.setContent(message, "text/html; charset="+charset.name());
         content.addBodyPart(htmlBodyPart);
@@ -91,7 +93,6 @@ public class SmtpCall {
         content.addBodyPart(attachment);
         return this;
     }
-
 
 
     public void send() throws NamingException, IOException {
@@ -135,6 +136,10 @@ public class SmtpCall {
         message.addRecipient(TO, recipient);
         message.saveChanges();
         return message;
+    }
+
+    public static boolean isNullOrEmpty(final String value) {
+        return value == null || value.isEmpty();
     }
 
 }
