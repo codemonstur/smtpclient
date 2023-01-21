@@ -5,7 +5,7 @@ enablePreview: false
 release: 11
 version: 1.0.0
 dependencies:
-  - repository: com.sun.mail:javax.mail:1.6.1
+  - repository: com.sun.mail:javax.mail:1.6.2
 
 build
     echo [${PROJECT_NAME}] Building
