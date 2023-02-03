@@ -26,5 +26,5 @@ It's in Maven Central:
     <dependency>
         <groupId>com.github.codemonstur</groupId>
         <artifactId>smtpclient</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.1</version>
     </dependency>

@@ -1,9 +1,17 @@
 include https://raw.githubusercontent.com/codemonstur/bobfiles/master/foss-lib-github-maven
 
+vendor: com.github.codemonstur
+name: smptclient
+version: 1.0.1
 packaging: jar
+description: An SMTP client. Makes it easy to send an email directly to the recipients MailExchanger.
+license:
+  name: MIT
+developer:
+  name: Jurgen Voorneveld
+  email: jegvoorneveld@gmail.com
 enablePreview: false
 release: 11
-version: 1.0.1
 dependencies:
   - repository: com.sun.mail:javax.mail:1.6.2
 
