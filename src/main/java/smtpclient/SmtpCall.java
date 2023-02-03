@@ -74,6 +74,7 @@ public class SmtpCall {
     }
     public SmtpCall addBodyText(final String message, final Charset charset) throws MessagingException {
         if (isNullOrEmpty(message)) return this;
+
         final MimeBodyPart textBodyPart = new MimeBodyPart();
         textBodyPart.setText(message, charset.toString());
         content.addBodyPart(textBodyPart);
@@ -81,6 +82,7 @@ public class SmtpCall {
     }
     public SmtpCall addBodyHtml(final String message, final Charset charset) throws MessagingException {
         if (isNullOrEmpty(message)) return this;
+
         final MimeBodyPart htmlBodyPart = new MimeBodyPart();
         htmlBodyPart.setContent(message, "text/html; charset="+charset.name());
         content.addBodyPart(htmlBodyPart);
