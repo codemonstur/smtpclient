@@ -98,14 +98,19 @@ public class SmtpCall {
 
 
     public void send() throws NamingException, IOException {
-        final var servers = !mailServers.isEmpty() ? mailServers : toMailServers(lookupMailHosts(recipient));
-        for (final String mailServer : servers) {
-            if (deliver(mailServer)) return;
+        if (mailServers.isEmpty()) mailServers = toMailServers(lookupMailHosts(recipient));
+        final var errors = new ArrayList<String>();
+        for (final String mailServer : mailServers) {
+            final var error = deliverReturnError(mailServer);
+            if (isNullOrEmpty(error)) return;
+
+            errors.add(mailServer + ": " + error);
         }
-        throw new IOException("Failed to deliver email to any mail server");
+        throw new IOException("Failed to deliver email to any mail server. Recipient email address: "
+                + recipient + ", mail servers tried: " + errors);
     }
 
-    private boolean deliver(final String mailServer) {
+    private String deliverReturnError(final String mailServer) {
         try {
             final Session mailSession = getDefaultInstance(createMailSessionProperties(mailServer));
             final MimeMessage message = createMessage(mailSession, sender, subject, content, recipient);
@@ -116,9 +121,9 @@ public class SmtpCall {
             } finally {
                 transport.close();
             }
-            return true;
-        } catch (Exception e) {
-            return false;
+            return null;
+        } catch (final Exception e) {
+            return e.getMessage();
         }
     }
 

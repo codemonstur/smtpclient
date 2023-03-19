@@ -1,4 +1,4 @@
 1.0.2
 
-Deleted pom,
-Pushed bew version due to bob error
+Deleted pom
+Pushed new version due to bob error
