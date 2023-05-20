@@ -30,7 +30,7 @@ public class SmtpCall {
     private Address sender;
     private InternetAddress recipient;
     private String subject;
-    private Multipart content = new MimeMultipart();
+    private Multipart content = new MimeMultipart("alternative");
 
 
     public SmtpCall mailserver(final String server) {
@@ -84,7 +84,7 @@ public class SmtpCall {
         if (isNullOrEmpty(message)) return this;
 
         final MimeBodyPart htmlBodyPart = new MimeBodyPart();
-        htmlBodyPart.setContent(message, "text/html; charset="+charset.name());
+        htmlBodyPart.setContent(message, "text/html; charset=" + charset.name());
         content.addBodyPart(htmlBodyPart);
         return this;
     }

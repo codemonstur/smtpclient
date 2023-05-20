@@ -36,7 +36,7 @@ public enum LookupMX {;
         return new InitialDirContext().getAttributes("dns:/" + domainName, MX_RECORD).get("MX");
     }
 
-    private static class MXRecord implements Comparable<MXRecord> {
+    public static class MXRecord implements Comparable<MXRecord> {
         private final String hostname;
         private final Integer preference;
 
@@ -51,6 +51,11 @@ public enum LookupMX {;
         @Override
         public int compareTo(final MXRecord o) {
             return preference.compareTo(o.preference);
+        }
+
+        @Override
+        public String toString() {
+            return hostname;
         }
     }
 
