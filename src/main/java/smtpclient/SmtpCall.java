@@ -8,6 +8,7 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.util.ByteArrayDataSource;
 import javax.naming.NamingException;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
@@ -16,11 +17,12 @@ import java.util.List;
 import java.util.Properties;
 
 import static javax.mail.Message.RecipientType.TO;
+import static javax.mail.Part.ATTACHMENT;
 import static javax.mail.Session.getDefaultInstance;
 import static smtpclient.LookupMX.lookupMailHosts;
 import static smtpclient.LookupMX.toMailServers;
 
-public class SmtpCall {
+public class SmtpCall implements SmtpCallHeaders, SmtpCallContent {
 
     public static SmtpCall newSmtpCall() {
         return new SmtpCall();
@@ -30,14 +32,13 @@ public class SmtpCall {
     private Address sender;
     private InternetAddress recipient;
     private String subject;
-    private Multipart content = new MimeMultipart("alternative");
+    private Multipart content;
 
-
-    public SmtpCall mailserver(final String server) {
+    public SmtpCallHeaders mailserver(final String server) {
         this.mailServers.add(server);
         return this;
     }
-    public SmtpCall sender(final Address sender) {
+    public SmtpCallHeaders sender(final Address sender) {
         this.sender = sender;
         return this;
     }
@@ -45,7 +46,7 @@ public class SmtpCall {
     /**
      * The address is assumed to be a syntactically valid RFC822 address.
      */
-    public SmtpCall sender(final String name, final String emailAddress) {
+    public SmtpCallHeaders sender(final String name, final String emailAddress) {
         try {
             this.sender = new InternetAddress(emailAddress, name);
         } catch (final UnsupportedEncodingException e) {
@@ -53,14 +54,14 @@ public class SmtpCall {
         }
         return this;
     }
-    public SmtpCall recipient(final InternetAddress recipient) {
+    public SmtpCallHeaders recipient(final InternetAddress recipient) {
         this.recipient = recipient;
         return this;
     }
     /**
      * The address is assumed to be a syntactically valid RFC822 address.
      */
-    public SmtpCall recipient(final String name, final String emailAddress) {
+    public SmtpCallHeaders recipient(final String name, final String emailAddress) {
         try {
             this.recipient = new InternetAddress(emailAddress, name);
         } catch (final UnsupportedEncodingException e) {
@@ -68,19 +69,32 @@ public class SmtpCall {
         }
         return this;
     }
-    public SmtpCall subject(final String subject) {
+    public SmtpCallHeaders subject(final String subject) {
         this.subject = subject;
         return this;
     }
-    public SmtpCall addBodyText(final String message, final Charset charset) throws MessagingException {
+
+    @Override
+    public SmtpCallContent useMultipartAlternative() {
+        this.content = new MimeMultipart("alternative");
+        return this;
+    }
+
+    @Override
+    public SmtpCallContent useMultipartMixed() {
+        this.content = new MimeMultipart("mixed");
+        return this;
+    }
+
+    public SmtpCallContent addBodyText(final String message, final Charset charset) throws MessagingException {
         if (isNullOrEmpty(message)) return this;
 
         final MimeBodyPart textBodyPart = new MimeBodyPart();
-        textBodyPart.setText(message, charset.toString());
+        textBodyPart.setText(message, "text/plain; charset=" + charset.toString());
         content.addBodyPart(textBodyPart);
         return this;
     }
-    public SmtpCall addBodyHtml(final String message, final Charset charset) throws MessagingException {
+    public SmtpCallContent addBodyHtml(final String message, final Charset charset) throws MessagingException {
         if (isNullOrEmpty(message)) return this;
 
         final MimeBodyPart htmlBodyPart = new MimeBodyPart();
@@ -88,10 +102,11 @@ public class SmtpCall {
         content.addBodyPart(htmlBodyPart);
         return this;
     }
-    public SmtpCall addAttachment(final String name, final String type, final byte[] data) throws MessagingException {
+    public SmtpCallContent addAttachment(final String name, final String type, final byte[] data) throws MessagingException {
         final MimeBodyPart attachment = new MimeBodyPart();
         attachment.setDataHandler(new DataHandler(new ByteArrayDataSource(data, type)));
         attachment.setFileName(name);
+        attachment.setDisposition(ATTACHMENT);
         content.addBodyPart(attachment);
         return this;
     }
@@ -99,31 +114,31 @@ public class SmtpCall {
 
     public void send() throws NamingException, IOException {
         if (mailServers.isEmpty()) mailServers = toMailServers(lookupMailHosts(recipient));
-        final var errors = new ArrayList<String>();
+        final var causes = new ArrayList<String>();
         for (final String mailServer : mailServers) {
-            final var error = deliverReturnError(mailServer);
-            if (isNullOrEmpty(error)) return;
-
-            errors.add(mailServer + ": " + error);
+            try {
+                deliverReturnError(mailServer);
+            } catch (final Exception e) {
+                causes.add("Mailserver " + mailServer + " failed to deliver for these reasons:\n" + toFullMessage(e));
+            }
         }
-        throw new IOException("Failed to deliver email to any mail server. Recipient email address: "
-                + recipient + ", mail servers tried: " + errors);
+        throw new IOException("Failed to deliver email to address " + recipient + "\nCauses: " + causes);
     }
 
-    private String deliverReturnError(final String mailServer) {
+    private static String toFullMessage(final Throwable e) {
+        final String message = e.getClass().getSimpleName() + ": " + e.getMessage();
+        return e.getCause() == null ? message : message + "\n" + toFullMessage(e.getCause());
+    }
+
+    private void deliverReturnError(final String mailServer) throws MessagingException {
+        final Session mailSession = getDefaultInstance(createMailSessionProperties(mailServer));
+        final MimeMessage message = createMessage(mailSession, sender, subject, content, recipient);
+        final Transport transport = mailSession.getTransport();
         try {
-            final Session mailSession = getDefaultInstance(createMailSessionProperties(mailServer));
-            final MimeMessage message = createMessage(mailSession, sender, subject, content, recipient);
-            final Transport transport = mailSession.getTransport();
-            try {
-                transport.connect();
-                transport.sendMessage(message, message.getRecipients(TO));
-            } finally {
-                transport.close();
-            }
-            return null;
-        } catch (final Exception e) {
-            return e.getMessage();
+            transport.connect();
+            transport.sendMessage(message, message.getRecipients(TO));
+        } finally {
+            transport.close();
         }
     }
 
@@ -145,7 +160,7 @@ public class SmtpCall {
         return message;
     }
 
-    public static boolean isNullOrEmpty(final String value) {
+    private static boolean isNullOrEmpty(final String value) {
         return value == null || value.isEmpty();
     }
 

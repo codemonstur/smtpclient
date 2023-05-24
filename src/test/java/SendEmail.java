@@ -13,6 +13,7 @@ public class SendEmail {
             .sender("Jurgen Test", "no-reply@3rd-stage.nl")
             .recipient("Jurgen Voorneveld", "jegvoorneveld@gmail.com")
             .subject("A test subject")
+            .useMultipartMixed()
             .addBodyText("Just a test message", UTF_8)
             .addBodyHtml("<html><body><b>html content</b></body></html>", UTF_8)
             .send();
