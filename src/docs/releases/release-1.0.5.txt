@@ -1,0 +1,4 @@
+1.0.5
+
+Made it possible to choose mixed or alternative mode
+Fixed bug with content-type
