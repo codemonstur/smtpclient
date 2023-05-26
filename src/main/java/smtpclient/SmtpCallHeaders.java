@@ -2,10 +2,10 @@ package smtpclient;
 
 import javax.mail.Address;
 import javax.mail.internet.InternetAddress;
-import java.io.UnsupportedEncodingException;
 
 public interface SmtpCallHeaders {
 
+    SmtpCallHeaders ehlo(String identity);
     SmtpCallHeaders mailserver(String server);
     SmtpCallHeaders sender(Address sender);
 

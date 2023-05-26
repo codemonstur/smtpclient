@@ -1,14 +1,16 @@
 package smtpclient;
 
 import javax.activation.DataHandler;
-import javax.mail.*;
+import javax.mail.Address;
+import javax.mail.MessagingException;
+import javax.mail.Multipart;
+import javax.mail.Session;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.util.ByteArrayDataSource;
 import javax.naming.NamingException;
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
@@ -28,12 +30,17 @@ public class SmtpCall implements SmtpCallHeaders, SmtpCallContent {
         return new SmtpCall();
     }
 
+    private String identity;
     private List<String> mailServers = new ArrayList<>();
     private Address sender;
     private InternetAddress recipient;
     private String subject;
     private Multipart content;
 
+    public SmtpCallHeaders ehlo(final String identity) {
+        this.identity = identity;
+        return this;
+    }
     public SmtpCallHeaders mailserver(final String server) {
         this.mailServers.add(server);
         return this;
@@ -90,7 +97,7 @@ public class SmtpCall implements SmtpCallHeaders, SmtpCallContent {
         if (isNullOrEmpty(message)) return this;
 
         final MimeBodyPart textBodyPart = new MimeBodyPart();
-        textBodyPart.setText(message, "text/plain; charset=" + charset.toString());
+        textBodyPart.setText(message, charset.name());
         content.addBodyPart(textBodyPart);
         return this;
     }
@@ -118,6 +125,7 @@ public class SmtpCall implements SmtpCallHeaders, SmtpCallContent {
         for (final String mailServer : mailServers) {
             try {
                 deliverReturnError(mailServer);
+                return;
             } catch (final Exception e) {
                 causes.add("Mailserver " + mailServer + " failed to deliver for these reasons:\n" + toFullMessage(e));
             }
@@ -131,27 +139,26 @@ public class SmtpCall implements SmtpCallHeaders, SmtpCallContent {
     }
 
     private void deliverReturnError(final String mailServer) throws MessagingException {
-        final Session mailSession = getDefaultInstance(createMailSessionProperties(mailServer));
-        final MimeMessage message = createMessage(mailSession, sender, subject, content, recipient);
-        final Transport transport = mailSession.getTransport();
-        try {
+        final var mailSession = getDefaultInstance(createMailSessionProperties(identity, mailServer));
+        final var message = createMessage(mailSession, sender, subject, content, recipient);
+        try (final var transport = mailSession.getTransport()) {
             transport.connect();
             transport.sendMessage(message, message.getRecipients(TO));
-        } finally {
-            transport.close();
         }
     }
 
-    private static Properties createMailSessionProperties(final String mailServer) {
-        final Properties props = new Properties();
+    private static Properties createMailSessionProperties(final String identity, final String destination) {
+        final var props = new Properties();
         props.put("mail.transport.protocol", "smtp");
-        props.put("mail.smtp.host", mailServer);
+        props.put("mail.smtp.host", destination);
         props.put("mail.smtp.auth", "false");
+        if (!isNullOrEmpty(identity))
+            props.put("mail.smtp.localhost", identity);
         return props;
     }
     private static MimeMessage createMessage(final Session mailSession, final Address sender, final String subject,
                                              final Multipart content, final InternetAddress recipient) throws MessagingException {
-        final MimeMessage message = new MimeMessage(mailSession);
+        final var message = new MimeMessage(mailSession);
         message.setFrom(sender);
         message.setSubject(subject);
         message.setContent(content);

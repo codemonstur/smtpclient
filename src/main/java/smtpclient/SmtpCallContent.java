@@ -1,9 +1,6 @@
 package smtpclient;
 
-import javax.activation.DataHandler;
 import javax.mail.MessagingException;
-import javax.mail.internet.MimeBodyPart;
-import javax.mail.util.ByteArrayDataSource;
 import javax.naming.NamingException;
 import java.io.IOException;
 import java.nio.charset.Charset;
