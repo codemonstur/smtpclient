@@ -18,6 +18,7 @@ Characteristics:
         .sender("John Doe", "johndoe@test.com")
         .recipient("Mary Jane", "mary-jane@gmail.com")
         .subject("A test subject")
+        .useMultipartAlternative()
         .addBodyText("Just a test message", UTF_8)
         .send();
 
