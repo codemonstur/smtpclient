@@ -40,6 +40,7 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <maven.compiler.release>17</maven.compiler.release>
+
         <maven.version>3.6.3</maven.version>
 
         <version.library.mail>1.6.2</version.library.mail>
@@ -78,13 +79,14 @@
                 <version>${version.plugin.enforcer}</version>
                 <executions>
                     <execution>
-                        <id>enforce-maven</id>
+                        <id>enforce-maven-version</id>
                         <goals><goal>enforce</goal>
                         </goals>
                         <configuration>
                             <rules>
                                 <requireMavenVersion>
                                     <version>${maven.version}</version>
+                                    <message>This project requires Maven ${maven.version} to build</message>
                                 </requireMavenVersion>
                             </rules>
                         </configuration>
